@@ -1,6 +1,7 @@
 use std::env;
 use std::error::Error;
 use std::fs;
+use std::process;
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     let contents = fs::read_to_string(config.file_path())?;
@@ -25,8 +26,16 @@ pub struct Config {
 }
 
 impl Config {
+    /// Builds Config from provided command line arguments
+    /// Note: May not behave as expected if there are exactly two arguments and the second argument contains "help". In such a case, it will return usage guidelines for the user and exit the process with code 0.
     pub fn build(args: &[String]) -> Result<Self, String> {
         let length = args.len();
+
+        // display help for the command
+        if length == 2 && args[1].to_lowercase().contains(&"help".to_lowercase()) {
+            println!("Usage: minigrep [query] [file path] (ignore_case)");
+            process::exit(0);
+        }
 
         if length < 3 {
             return Err(format!(
@@ -37,7 +46,9 @@ impl Config {
 
         let query = args[1].clone();
         let file_path = args[2].clone();
-        let ignore_case = env::var("IGNORE_CASE").is_ok();
+
+        let ignore_case: bool =
+            length >= 4 && args[3] == "ignore_case" || env::var("IGNORE_CASE").is_ok();
 
         Ok(Self {
             query,
